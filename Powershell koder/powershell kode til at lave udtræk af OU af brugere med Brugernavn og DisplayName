@@ -1,0 +1,13 @@
+# Importerer den nødvendige Active Directory-modul
+Import-Module ActiveDirectory
+
+# Angiver OU'en, du vil søge i
+$ou = "OU=Automize,OU=Users,OU=Azure,DC=inside,DC=sjns,DC=dk"
+
+# Henter alle brugere i den angivne OU
+$users = Get-ADUser -Filter * -SearchBase $ou -Properties DisplayName
+
+# Skriver brugernavne og displaynavne ud for alle brugere
+$users | ForEach-Object {
+    Write-Output ("Brugernavn: " + $_.SamAccountName + ", Displaynavn: " + $_.DisplayName)
+}
