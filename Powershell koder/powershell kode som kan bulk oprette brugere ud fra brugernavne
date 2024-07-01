@@ -1,0 +1,28 @@
+# Importerer den nødvendige Active Directory-module
+Import-Module ActiveDirectory
+
+# Definerer OU-stien
+$ouPath = "OU=YourOU,DC=YourDomain,DC=com"
+
+# Liste over brugernavne
+$usernames = @(
+"WMS-larkjo",
+"WMS-renwyr",
+"WMS-cargyn",
+"WMS-jeslor",
+"WMS-julole",
+"WMS-vicsre",
+"WMS-larsra",
+"WMS-thomar",
+"WMS-lassch")
+
+foreach ($username in $usernames) {
+    # Genererer et tilfældigt password
+    $password = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 16 | % {[char]$_})
+
+    # Opretter brugeren
+    New-ADUser -SamAccountName $username -UserPrincipalName "$username@norlys.dk" -Name $username -GivenName $username -Surname "Surname" -Enabled $true -DisplayName "$username Surname" -Path $ouPath -AccountPassword (ConvertTo-SecureString -AsPlainText $password -Force) -PassThru
+
+    # Skriver adgangskoden ud i konsollen
+    Write-Host "Password for $username is $password"
+}
