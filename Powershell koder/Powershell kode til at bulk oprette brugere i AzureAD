@@ -1,0 +1,63 @@
+# Importer AzureAD-modulet
+if (-not (Get-Module -ListAvailable -Name AzureAD)) {
+    Install-Module -Name AzureAD -Force
+}
+Import-Module AzureAD
+
+# Login til Azure AD
+Connect-AzureAD
+
+# Læs brugere fra CSV-fil som UTF-8
+$csvPath = "C:\Users\admin_tgo\Documents\azadadminkontiAZ.csv"
+$users = Import-Csv -Path $csvPath -Encoding UTF8
+
+# Funktion til at generere en tilfældig adgangskode
+function Generate-Password {
+    param (
+        [int]$length = 12
+    )
+    
+    $chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:',.<>/?"
+    $password = -join ((1..$length) | ForEach-Object { $chars[(Get-Random -Maximum $chars.Length)] })
+    return $password
+}
+
+# Domæne for UserPrincipalName
+$domain = "@delpro.dk"
+
+# Opret hver bruger fra CSV-fil
+foreach ($user in $users) {
+    if ($null -ne $user.DisplayName -and $null -ne $user.UserPrincipalName) {
+        $password = Generate-Password
+        
+        # Tilføj domænet til UserPrincipalName
+        $userPrincipalName = $user.UserPrincipalName + $domain
+
+        $userParams = @{
+            UserPrincipalName = $userPrincipalName
+            DisplayName = $user.DisplayName
+            MailNickname = $user.UserPrincipalName
+            AccountEnabled = $true
+            PasswordProfile = @{
+                ForceChangePasswordNextLogin = $true
+                Password = $password
+            }
+        }
+
+        # Opret brugeren
+        try {
+            $newUser = New-AzureADUser @userParams
+
+            # Udskriv oprettede bruger og adgangskode til konsollen
+            Write-Output "Bruger oprettet: $($newUser.UserPrincipalName)"
+            Write-Output "Display Name: $($newUser.DisplayName)"
+            Write-Output "Adgangskode: $password"
+            Write-Output "-----------------------------"
+        } catch {
+            Write-Output "Fejl ved oprettelse af bruger: $($user.UserPrincipalName)"
+            Write-Output $_.Exception.Message
+        }
+    } else {
+        Write-Output "Ugyldig data for bruger: $($user)"
+    }
+}
