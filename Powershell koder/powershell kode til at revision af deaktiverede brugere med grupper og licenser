@@ -1,0 +1,29 @@
+<# 
+
+Denne kode giver mulighed for at finde alle deaktiverede brugere i Azure AD og herefter skriver brugeren ud hvis de er medlem af nogen grupper eller licenser, husk og connect til azure ad først 
+
+#>
+
+$disabledUsers = Get-AzureADUser -All $true | Where-Object { $_.AccountEnabled -eq $false }
+
+$results = @()
+
+foreach ($user in $disabledUsers) {
+    $licenses = Get-AzureADUserLicenseDetail -ObjectId $user.ObjectId
+    
+    $groups = Get-AzureADUserMembership -ObjectId $user.ObjectId
+    
+    if ($licenses.Count -gt 0 -or $groups.Count -gt 0) {
+        $results += [PSCustomObject]@{
+            UserPrincipalName = $user.UserPrincipalName
+            DisplayName = $user.DisplayName
+            Licenses = $licenses.SkuId
+            Groups = $groups.DisplayName
+        }
+    }
+}
+
+$results | Format-Table -AutoSize
+
+
+
